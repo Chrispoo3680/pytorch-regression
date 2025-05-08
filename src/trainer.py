@@ -4,5 +4,8 @@ class Trainer:
         model,
         optimizer,
         loss_fn,
+        train_dataloader,
+        test_dataloader,
+        device,
     ):
         pass
