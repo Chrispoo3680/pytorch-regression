@@ -1,19 +1,21 @@
 import torch
 from torch.utils.data import random_split, DataLoader, Dataset
-import pandas as pd
+import polars as pl
 
 
 class CSVDataset(Dataset):
     def __init__(self, path: str, features_keys: list[str], target_keys: list[str]):
         super().__init__()
 
-        df = pd.read_csv(path, sep=";")
+        df = pl.read_csv(path, separator=";")
 
         self.values = torch.tensor(
-            zip(*[df[key].to_list() for key in features_keys]), dtype=torch.float32
+            zip(*[df.select(pl.col(key)).to_list() for key in features_keys]),
+            dtype=torch.float32,
         )
         self.targets = torch.tensor(
-            zip(*[df[key].to_list() for key in target_keys]), dtype=torch.float32
+            zip(*[df.select(pl.col(key)).to_list() for key in target_keys]),
+            dtype=torch.float32,
         )
 
         self.samples = [(val, targ) for val, targ in zip(self.values, self.targets)]
