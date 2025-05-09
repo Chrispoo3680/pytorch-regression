@@ -8,4 +8,12 @@ class Trainer:
         test_dataloader,
         device,
     ):
+
+        self.model = model
+        self.optimizer = optimizer
+        self.loss_fn = loss_fn
+        self.train_dataloader = train_dataloader
+        self.test_dataloader = test_dataloader
+
+    def train(self):
         pass
