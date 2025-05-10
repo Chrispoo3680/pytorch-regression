@@ -62,7 +62,7 @@ def main(
     # Create the object detection model
     logger.info("Loading model...")
 
-    model = models.LinearRegressionModel()
+    model = models.RegressionModel()
 
     logger.info(f"Successfully loaded model: {model.__class__.__name__}")
 

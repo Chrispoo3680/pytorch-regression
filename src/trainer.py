@@ -151,27 +151,27 @@ class Trainer:
             train_loss, train_acc = self.train_step(epoch)
             test_loss, test_acc = self.test_step(epoch)
 
+            self.early_stopping(test_loss, self.model.module, epoch + 1)
+
+            # Log and save epoch loss and accuracy results
+            logger.info(
+                f"      GPU ID: {self.rank}  |  "
+                f"epoch: {epoch+1}  |  "
+                f"train_loss: {train_loss:.4f}  |  "
+                f"train_acc: {train_acc:.4f}  |  "
+                f"test_loss: {test_loss:.4f}  |  "
+                f"test_acc: {test_acc:.4f}  |  "
+                f"learning_rate: {self.optimizer.param_groups[0]['lr']}  |  "
+                f"early stopping counter: {self.early_stopping.counter} / {self.early_stopping.patience}"
+            )
+
+            results["learning_rate"].append(self.optimizer.param_groups[0]["lr"])
+            results["train_loss"].append(train_loss)
+            results["train_acc"].append(train_acc)
+            results["test_loss"].append(test_loss)
+            results["test_acc"].append(test_acc)
+
             if self.rank == 0:
-
-                self.early_stopping(test_loss, self.model.module, epoch + 1)
-
-                # Log and save epoch loss and accuracy results
-                logger.info(
-                    f"GPU ID: {self.rank}  |  "
-                    f"epoch: {epoch+1}  |  "
-                    f"train_loss: {train_loss:.4f}  |  "
-                    f"train_acc: {train_acc:.4f}  |  "
-                    f"test_loss: {test_loss:.4f}  |  "
-                    f"test_acc: {test_acc:.4f}  |  "
-                    f"learning_rate: {self.optimizer.param_groups[0]['lr']}  |  "
-                    f"early stopping counter: {self.early_stopping.counter} / {self.early_stopping.patience}"
-                )
-
-                results["learning_rate"].append(self.optimizer.param_groups[0]["lr"])
-                results["train_loss"].append(train_loss)
-                results["train_acc"].append(train_acc)
-                results["test_loss"].append(test_loss)
-                results["test_acc"].append(test_acc)
 
                 # See if there's a writer, if so, log to it
                 if self.writer:
@@ -197,6 +197,7 @@ class Trainer:
                     self.writer.close()
 
                 # Check if test loss is still decreasing. If not decreasing for multiple epochs, break the loop
+                """
                 if self.early_stopping.early_stop:
 
                     logger.info(
@@ -216,6 +217,7 @@ class Trainer:
                         obj=self.early_stopping.best_model_state,
                         f=self.temp_checkpoint_file_path,
                     )
+                """
 
             # Adjust learning rate
             if self.lr_scheduler is not None:
