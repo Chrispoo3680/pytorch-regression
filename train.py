@@ -12,7 +12,7 @@ from torch.distributed import destroy_process_group
 import sys
 from pathlib import Path
 
-repo_root_dir: Path = Path(__file__).parent.parent.parent.parent
+repo_root_dir: Path = Path(__file__).parent
 sys.path.append(str(repo_root_dir))
 
 import os
@@ -38,25 +38,26 @@ def main(
     WEIGHT_DECAY,
     LR_STEP_INTERVAL,
     data_paths: List[Union[str, Path]],
-    temp_checkpoint_path,
+    temp_checkpoint_dir,
     model_save_path,
     model_save_name_version,
     results_save_path,
     writer,
     device,
+    logger,
 ):
 
     utils.ddp_setup(rank, world_size)
 
     # Create train and test dataloaders
-    logger.debug(f"Creating dataloaders...")
+    logger.info(f"Creating dataloaders...")
 
     train_dataloader, test_dataloader, dataset = preprocess.create_dataloaders(
         dataset=preprocess.CSVDataset(data_paths),
         batch_size=BATCH_SIZE,
     )
 
-    logger.debug(f"Successfully created dataloaders.")
+    logger.info(f"Successfully created dataloaders.")
 
     # Create the object detection model
     logger.info("Loading model...")
@@ -98,7 +99,8 @@ def main(
         scaler=scaler,
         early_stopping=early_stopping,
         lr_scheduler=lr_scheduler,
-        temp_checkpoint_file_path=temp_checkpoint_path,
+        temp_checkpoint_file_path=temp_checkpoint_dir
+        / (model_save_name_version + ".pt"),
         writer=writer,
     )
 
@@ -143,12 +145,6 @@ if __name__ == "__main__":
         help="Step interval for the learning rate",
     )
     parser.add_argument(
-        "--dataset_file_name",
-        type=str,
-        default="dataset.csv",
-        help="Name of dataset file",
-    )
-    parser.add_argument(
         "--model_name", type=str, required=True, help="Loaded models name"
     )
     parser.add_argument(
@@ -160,7 +156,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_save_name",
         type=str,
-        default=parser.parse_known_args().model_name,  # type: ignore
+        default=parser.parse_known_args()[0].model_name,
         help="Model save name",
     )
 
@@ -189,8 +185,8 @@ if __name__ == "__main__":
         save_dir_path=model_save_path, save_name=MODEL_SAVE_NAME
     )
 
-    temp_checkpoint_path: Path = repo_root_dir / config["temp_checkpoint_path"]
-    os.makedirs(temp_checkpoint_path, exist_ok=True)
+    temp_checkpoint_dir: Path = repo_root_dir / config["temp_checkpoint_path"]
+    os.makedirs(temp_checkpoint_dir, exist_ok=True)
 
     results_save_path: Path = repo_root_dir / config["results_path"]
     os.makedirs(results_save_path, exist_ok=True)
@@ -269,12 +265,13 @@ if __name__ == "__main__":
             WEIGHT_DECAY,
             LR_STEP_INTERVAL,
             data_paths,
-            temp_checkpoint_path,
+            temp_checkpoint_dir,
             model_save_path,
             model_save_name_version,
             results_save_path,
             writer,
             device,
+            logger,
         ),
         nprocs=world_size,
     )

@@ -150,7 +150,8 @@ class Trainer:
 
                 # Log and save epoch loss and accuracy results
                 logger.info(
-                    f"      Epoch: {epoch+1}  |  "
+                    f"GPU ID: {self.rank}  |  "
+                    f"epoch: {epoch+1}  |  "
                     f"train_loss: {train_loss:.4f}  |  "
                     f"train_acc: {train_acc:.4f}  |  "
                     f"test_loss: {test_loss:.4f}  |  "

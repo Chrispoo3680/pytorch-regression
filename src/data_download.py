@@ -5,8 +5,6 @@ import os
 import sys
 from pathlib import Path
 
-import kaggle
-
 from .common import tools
 
 
@@ -34,6 +32,8 @@ def kaggle_download_data(
     # Set environment variables for Kaggle authentication
     os.environ["KAGGLE_USERNAME"] = config["kaggle_username"]
     os.environ["KAGGLE_KEY"] = config["kaggle_api_key"]
+
+    import kaggle
 
     api_cli = kaggle.KaggleApi()
 
