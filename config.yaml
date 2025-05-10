@@ -2,6 +2,9 @@
 data_path: data/
 
 # DATASETS
+linear_regression_dataset_url: https://www.kaggle.com/datasets/andonians/random-linear-regression
+linear_regression_dataset_slug: andonians/random-linear-regression
+linear_regression_dataset_name: linear_regression_dataset
 
 # MODELS
 model_path: models/
@@ -15,3 +18,7 @@ results_path: results/
 # LOGGING
 logging_path: logs/
 logging_level: debug
+
+# API KEYS
+kaggle_username: YOUR KAGGLE USERNAME # Instructions on how to get in "/src/data_download.py".
+kaggle_api_key: INSERT API KEY HERE # Instructions on how to get in "/src/data_download.py".
