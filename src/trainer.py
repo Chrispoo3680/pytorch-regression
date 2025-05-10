@@ -70,6 +70,7 @@ class Trainer:
                 position=1,
                 leave=False,
                 desc="Iterating through training batches.",
+                disable=self.rank != 0,
             )
         ):
             with torch.autocast(device_type=self.device.type, dtype=torch.float16):
@@ -110,6 +111,7 @@ class Trainer:
                         position=1,
                         leave=False,
                         desc="Iterating through testing batches.",
+                        disable=self.rank != 0,
                     )
                 ):
                     X, y = X.to(self.rank), y.to(self.rank)
@@ -140,7 +142,12 @@ class Trainer:
             "test_acc": [],
         }
 
-        for epoch in tqdm(range(epochs), position=0, desc="Iterating through epochs."):
+        for epoch in tqdm(
+            range(epochs),
+            position=0,
+            desc="Iterating through epochs.",
+            disable=self.rank != 0,
+        ):
             train_loss, train_acc = self.train_step(epoch)
             test_loss, test_acc = self.test_step(epoch)
 
