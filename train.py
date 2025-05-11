@@ -67,7 +67,7 @@ def main(
     logger.info(f"Successfully loaded model: {model.__class__.__name__}")
 
     # Set loss, optimizer and learning rate scheduling
-    loss_fn = nn.CrossEntropyLoss()
+    loss_fn = nn.MSELoss()
 
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY
