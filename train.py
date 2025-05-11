@@ -85,7 +85,6 @@ def main(
     early_stopping = utils.EarlyStopping(patience=5, delta=0.001)
 
     # Set up scaler for better efficiency
-
     scaler = GradScaler()
 
     trainer = Trainer(

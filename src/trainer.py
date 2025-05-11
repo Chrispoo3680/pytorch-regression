@@ -49,6 +49,7 @@ class Trainer:
         self.train_dataloader = train_dataloader
         self.test_dataloader = test_dataloader
         self.scaler = scaler
+        self.skip_lr_sched = False
         self.lr_scheduler = lr_scheduler
         self.early_stopping = early_stopping
         self.temp_checkpoint_file_path = temp_checkpoint_file_path
@@ -81,7 +82,9 @@ class Trainer:
 
             self.scaler.step(self.optimizer)
 
+            scale = self.scaler.get_scale()
             self.scaler.update()
+            self.skip_lr_sched = scale != self.scaler.get_scale()
 
             self.optimizer.zero_grad(set_to_none=True)
 
@@ -195,7 +198,7 @@ class Trainer:
                 """
 
             # Adjust learning rate
-            if self.lr_scheduler is not None:
+            if self.lr_scheduler is not None and not self.skip_lr_sched:
                 self.lr_scheduler.step()
 
         return results, self.early_stopping.best_model_state
