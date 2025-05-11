@@ -17,7 +17,6 @@ sys.path.append(str(repo_root_dir))
 
 import os
 import logging
-from tqdm import tqdm
 import argparse
 import json
 
@@ -44,10 +43,22 @@ def main(
     results_save_path,
     writer,
     device,
-    logger,
 ):
 
     utils.ddp_setup(rank, world_size)
+
+    if rank == 0:
+        try:
+            logging_file_path = os.environ["LOGGING_FILE_PATH"]
+        except KeyError:
+            logging_file_path = None
+
+        logger = tools.create_logger(log_path=logging_file_path, logger_name=__name__)
+
+    else:
+        logger = logging.getLogger("silent_logger")
+        logger.setLevel(logging.INFO)
+        logger.addHandler(logging.NullHandler())
 
     # Create train and test dataloaders
     logger.info(f"Creating dataloaders...")
@@ -270,7 +281,6 @@ if __name__ == "__main__":
             results_save_path,
             writer,
             device,
-            logger,
         ),
         nprocs=world_size,
     )

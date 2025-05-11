@@ -62,7 +62,7 @@ class CSVDataset(Dataset):
         )
 
         self.targets = torch.tensor(
-            list(zip(*[self.df[key].to_list()[:500] for key in target_keys])),
+            list(zip(*[self.df[key].to_list() for key in target_keys])),
             dtype=torch.float32,
         )
 
