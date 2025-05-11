@@ -43,7 +43,7 @@ class Trainer:
 
         self.device = device
         self.rank = rank
-        self.model = model.to(rank)
+        self.model = DDP(model, device_ids=[rank])
         self.optimizer = optimizer
         self.loss_fn = loss_fn
         self.train_dataloader = train_dataloader
@@ -53,8 +53,6 @@ class Trainer:
         self.early_stopping = early_stopping
         self.temp_checkpoint_file_path = temp_checkpoint_file_path
         self.writer = writer
-
-        self.model = DDP(model, device_ids=[rank])
 
     def train_step(self, epoch: int):
 
@@ -73,10 +71,12 @@ class Trainer:
                 disable=self.rank != 0,
             )
         ):
+            print(X, y)
             with torch.autocast(device_type=self.device.type, dtype=torch.float16):
                 X, y = X.to(self.rank), y.to(self.rank)
                 y_pred = self.model(X)
                 loss = self.loss_fn(y_pred, y)
+                print(loss.item())
                 train_loss += loss.item()
 
             self.scaler.scale(loss).backward()

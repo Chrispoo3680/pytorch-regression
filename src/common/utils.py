@@ -4,7 +4,7 @@ Contains various utility functions for PyTorch model training and saving.
 
 import torch
 from torch.utils.tensorboard.writer import SummaryWriter
-from torch.distributed import init_process_group
+import torch.distributed as dist
 
 import os
 from pathlib import Path
@@ -32,7 +32,11 @@ def ddp_setup(rank, world_size):
 
     torch.cuda.set_device(rank)
 
-    init_process_group(backend="nccl", rank=rank, world_size=world_size)
+    dist.init_process_group(backend="nccl", rank=rank, world_size=world_size)
+
+
+def cleanup():
+    dist.destroy_process_group()
 
 
 def save_model(

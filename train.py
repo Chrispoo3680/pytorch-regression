@@ -122,7 +122,7 @@ def main(
         ) as f:
             f.write(results_json)
 
-    destroy_process_group()
+    utils.cleanup()
 
 
 if __name__ == "__main__":
@@ -251,7 +251,7 @@ if __name__ == "__main__":
 
     # Setup target device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    logger.info(f"Using device = {device}")
+    logger.info(f"Using device = {device.type}")
 
     world_size = torch.cuda.device_count()
 
