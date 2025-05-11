@@ -60,7 +60,7 @@ class Trainer:
 
         self.model.train()
 
-        train_loss, train_acc = 0, 0
+        train_loss = 0
 
         for batch, (X, y) in enumerate(
             tqdm(
@@ -85,14 +85,9 @@ class Trainer:
 
             self.optimizer.zero_grad(set_to_none=True)
 
-            # Calculate and accumulate accuracy metric across all batches
-            y_pred_class = torch.argmax(torch.softmax(y_pred, dim=1), dim=1)
-            train_acc += (y_pred_class == y).sum().item() / len(y_pred)
-
         # Adjust metrics to get average loss and accuracy per batch
         train_loss = train_loss / len(self.train_dataloader)
-        train_acc = train_acc / len(self.train_dataloader)
-        return train_loss, train_acc
+        return train_loss
 
     def test_step(self, epoch: int):
 
@@ -100,7 +95,7 @@ class Trainer:
 
         self.model.eval()
 
-        test_loss, test_acc = 0, 0
+        test_loss = 0
         with torch.autocast(device_type=self.device.type, dtype=torch.float16):
             with torch.inference_mode():
                 for batch, (X, y) in enumerate(
@@ -119,25 +114,16 @@ class Trainer:
                     loss = self.loss_fn(test_pred_logits, y)
                     test_loss += loss.item()
 
-                    # Calculate and accumulate accuracy
-                    test_pred_labels = test_pred_logits.argmax(dim=1)
-                    test_acc += (test_pred_labels == y).sum().item() / len(
-                        test_pred_labels
-                    )
-
         # Adjust metrics to get average loss and accuracy per batch
         test_loss = test_loss / len(self.test_dataloader)
-        test_acc = test_acc / len(self.test_dataloader)
-        return test_loss, test_acc
+        return test_loss
 
     def train(self, epochs: int) -> Tuple[Dict[str, List[float]], Dict[str, Any]]:
 
         results: Dict[str, List[float]] = {
             "learning_rate": [],
             "train_loss": [],
-            "train_acc": [],
             "test_loss": [],
-            "test_acc": [],
         }
 
         for epoch in tqdm(
@@ -146,30 +132,26 @@ class Trainer:
             desc="Iterating through epochs.",
             disable=self.rank != 0,
         ):
-            train_loss, train_acc = self.train_step(epoch)
-            test_loss, test_acc = self.test_step(epoch)
-
-            self.early_stopping(test_loss, self.model.module, epoch + 1)
-
-            # Log and save epoch loss and accuracy results
-            logger.info(
-                f"      GPU ID: {self.rank}  |  "
-                f"epoch: {epoch+1}  |  "
-                f"train_loss: {train_loss:.4f}  |  "
-                f"train_acc: {train_acc:.4f}  |  "
-                f"test_loss: {test_loss:.4f}  |  "
-                f"test_acc: {test_acc:.4f}  |  "
-                f"learning_rate: {self.optimizer.param_groups[0]['lr']}  |  "
-                f"early stopping counter: {self.early_stopping.counter} / {self.early_stopping.patience}"
-            )
+            train_loss = self.train_step(epoch)
+            test_loss = self.test_step(epoch)
 
             results["learning_rate"].append(self.optimizer.param_groups[0]["lr"])
             results["train_loss"].append(train_loss)
-            results["train_acc"].append(train_acc)
             results["test_loss"].append(test_loss)
-            results["test_acc"].append(test_acc)
 
             if self.rank == 0:
+
+                self.early_stopping(test_loss, self.model.module, epoch + 1)
+
+                # Log and save epoch loss and accuracy results
+                logger.info(
+                    f"      GPU ID: {self.rank}  |  "
+                    f"epoch: {epoch+1}  |  "
+                    f"train_loss: {train_loss:.4f}  |  "
+                    f"test_loss: {test_loss:.4f}  |  "
+                    f"learning_rate: {self.optimizer.param_groups[0]['lr']}  |  "
+                    f"early stopping counter: {self.early_stopping.counter} / {self.early_stopping.patience}"
+                )
 
                 # See if there's a writer, if so, log to it
                 if self.writer:
@@ -184,11 +166,6 @@ class Trainer:
                             "train_loss": train_loss,
                             "test_loss": test_loss,
                         },
-                        global_step=epoch,
-                    )
-                    self.writer.add_scalars(
-                        main_tag="Accuracy",
-                        tag_scalar_dict={"train_acc": train_acc, "test_acc": test_acc},
                         global_step=epoch,
                     )
 

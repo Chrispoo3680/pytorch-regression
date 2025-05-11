@@ -40,7 +40,6 @@ def create_dataloaders(
         shuffle=False,
         pin_memory=True,
         sampler=DistributedSampler(test_data),
-        drop_last=True,
     )
 
     return train_dataloader, test_dataloader, dataset
