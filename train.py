@@ -96,7 +96,7 @@ def main(
     early_stopping = utils.EarlyStopping(patience=5, delta=0.001)
 
     # Set up scaler for better efficiency
-    scaler = GradScaler()
+    scaler = GradScaler(device)
 
     trainer = Trainer(
         model=model,
@@ -245,6 +245,12 @@ if __name__ == "__main__":
 
     data_paths: List[Path] = list(Path(data_path).rglob("*.csv"))
 
+    # Setup target device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    logger.info(f"Using device = {device.type}")
+
+    world_size = torch.cuda.device_count()
+
     # Logging hyperparameters
     logger.info(
         f"Using hyperparameters:"
@@ -257,13 +263,8 @@ if __name__ == "__main__":
         f"\n    model_save_name = {MODEL_SAVE_NAME}"
         f"\n    experiment_name = {EXPERIMENT_NAME}"
         f"\n    experiment_name = {EXPERIMENT_VARIABLE}"
+        f"\n    world_size = {world_size}"
     )
-
-    # Setup target device
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    logger.info(f"Using device = {device.type}")
-
-    world_size = torch.cuda.device_count()
 
     mp.spawn(
         main,
