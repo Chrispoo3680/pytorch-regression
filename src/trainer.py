@@ -142,9 +142,11 @@ class Trainer:
             results["train_loss"].append(train_loss)
             results["test_loss"].append(test_loss)
 
+            self.early_stopping(test_loss, self.model.module, epoch + 1)
+
             if self.rank == 0:
 
-                self.early_stopping(test_loss, self.model.module, epoch + 1)
+                early_stop_flag = int(self.early_stopping.early_stop)
 
                 # Log and save epoch loss and accuracy results
                 logger.info(
@@ -174,9 +176,17 @@ class Trainer:
 
                     self.writer.close()
 
-                # Check if test loss is still decreasing. If not decreasing for multiple epochs, break the loop
-                """
-                if self.early_stopping.early_stop:
+            else:
+                early_stop_flag = 0
+
+            # Sync across all ranks
+            should_stop_tensor = torch.tensor(early_stop_flag, device=self.rank)
+            torch.distributed.broadcast(should_stop_tensor, src=0)
+            should_stop = bool(should_stop_tensor.item())
+
+            # Check if test loss is still decreasing. If not decreasing for multiple epochs, break the loop
+            if should_stop:
+                if self.rank == 0:
 
                     logger.info(
                         f"Models test loss not decreasing significantly enough. Stopping training early at epoch: {epoch+1}"
@@ -188,14 +198,13 @@ class Trainer:
                     if self.temp_checkpoint_file_path is not None:
                         os.remove(self.temp_checkpoint_file_path)
 
-                    break
+                break
 
-                elif self.temp_checkpoint_file_path is not None:
-                    torch.save(
-                        obj=self.early_stopping.best_model_state,
-                        f=self.temp_checkpoint_file_path,
-                    )
-                """
+            elif self.rank == 0 and self.temp_checkpoint_file_path is not None:
+                torch.save(
+                    obj=self.early_stopping.best_model_state,
+                    f=self.temp_checkpoint_file_path,
+                )
 
             # Adjust learning rate
             if self.lr_scheduler is not None and not self.skip_lr_sched:
