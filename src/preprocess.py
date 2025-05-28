@@ -6,7 +6,7 @@ import polars as pl
 from pathlib import Path
 import os
 
-from typing import Any, List, Union
+from typing import Any, List, Union, Dict, Type
 
 NUM_WORKERS: int = 0 if os.cpu_count() is None else os.cpu_count()  # type: ignore
 
@@ -49,20 +49,20 @@ class CSVDataset(Dataset):
     def __init__(
         self,
         paths: List[Union[str, Path]],
-        features_keys: List[str] = ["x"],
-        target_keys: List[str] = ["y"],
+        features_keys: Dict[str, Type] = {"x": float},
+        target_keys: Dict[str, Type] = {"y": float},
     ):
         super().__init__()
 
-        self.df = pl.scan_csv(paths, separator=",", schema_overrides={"x": float, "y": float}).collect().drop_nulls()  # type: ignore
+        self.df = pl.scan_csv(paths, separator=",", schema_overrides=dict(**features_keys, **target_keys)).collect().drop_nulls()  # type: ignore
 
         self.values = torch.tensor(
-            list(zip(*[self.df[key].to_list() for key in features_keys])),
+            list(zip(*[self.df[key].to_list() for key in features_keys.keys()])),
             dtype=torch.float32,
         )
 
         self.targets = torch.tensor(
-            list(zip(*[self.df[key].to_list() for key in target_keys])),
+            list(zip(*[self.df[key].to_list() for key in target_keys.keys()])),
             dtype=torch.float32,
         )
 
